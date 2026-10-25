@@ -30,11 +30,17 @@ that check. The Cast protocol itself is fully alive — only the walled-garden
 senders refuse. Expect similar behavior from any sender that launches its
 own cloud-hosted receiver app.
 
-Untested, probably device-by-device:
-- Third-party casting apps (VLC, BubbleUPnP, LocalCast, Plex) — depends on
-  whether they use the Default Media Receiver path (works) or their own
-  registered receiver apps (likely gated). mkchromecast (pychromecast-based)
-  should work.
+Verified working, second data point:
+- **VLC** (PC, snap build): casts by launching the Default Media Receiver —
+  the ungated path — and held a clean receiver session for a full test run.
+  VLC's renderer discovery is plain mDNS (no Google registry check), so it
+  appears in Playback → Renderer. Verified via direct IP:
+  `vlc --intf dummy --sout '#transcode{acodec=aac,ab=128,channels=2,samplerate=44100}:chromecast{ip=<speaker>}' <url>`
+
+Untested, probably app-by-app:
+- Other third-party casting apps (BubbleUPnP, LocalCast, Plex) — same
+  principle: Default Media Receiver path works; their own Google-registered
+  receiver apps get gated. mkchromecast (pychromecast-based) should work.
 
 Also dead, permanently:
 - Google Assistant voice (cloud-only, permanently dead).

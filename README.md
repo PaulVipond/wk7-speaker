@@ -124,12 +124,15 @@ Being precise, because this is the biggest let-down to understand up front:
   app — anything that checks Google's device registry before showing a
   speaker. Those senders see the speaker on the network and hide it because
   its Google registration died with the platform.
-- **Does work:** the tools in this repository; Home Assistant (its Cast
-  integration speaks the protocol directly — announcements, radio, scripts);
+- **Does work:** the tools in this repository; **VLC** (PC and Android —
+  verified; it casts via the open Default Media Receiver, so Google's
+  registry never enters into it); Home Assistant (its Cast integration
+  speaks the protocol directly — announcements, radio, scripts);
   mkchromecast; and any software using the Default Media Receiver path.
-- **Possibly works:** some third-party casting apps (VLC, BubbleUPnP and
-  friends) — it depends on which receiver app they launch. Untested; try
-  yours and it'll be obvious in seconds.
+- **Possibly works:** other third-party casting apps (BubbleUPnP, LocalCast
+  and friends) — same principle as VLC: if the app uses the Default Media
+  Receiver it will work; if it insists on its own Google-registered
+  receiver app it won't. Try yours — it'll be obvious in seconds.
 
 Options if Spotify is your main music source:
 - The "spotifyd bridge" — software that lets Spotify reach the speaker
