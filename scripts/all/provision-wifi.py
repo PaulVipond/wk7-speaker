@@ -609,26 +609,30 @@ def main():
         return 1
 
     print("Step 6: saving the settings so they survive power cuts...")
-    # The speaker's setup network can blip while it finalizes the join, so
-    # retry the save and then verify against the device's actual state.
+    # Retry the save and verify against the device's actual state. If the
+    # Connecting phase already found the speaker on the home network, use
+    # that address — the setup network is dead by then, and polling it
+    # just wastes three retry cycles.
+    target = lan_ip or ip
     saved = False
     for attempt in range(3):
         try:
-            status, _ = api(ip, "/setup/save_wifi", "POST", "", timeout=3)
+            status, _ = api(target, "/setup/save_wifi", "POST", "", timeout=3)
             if status == 200:
                 saved = True
                 break
         except Exception:
             pass  # network blip — the request may still have gone through
         try:
-            _, st = api(ip, "/setup/eureka_info", timeout=3)
+            _, st = api(target, "/setup/eureka_info", timeout=3)
             if st.get("wpa_configured"):
                 saved = True   # an earlier attempt already did it
                 break
         except Exception:
             pass
-        print("  (retrying the save step...)")
-        time.sleep(5)
+        if attempt < 2:
+            print("  (retrying the save step...)")
+            time.sleep(5)
     if not saved:
         # The common case: the speaker drops its setup network during the
         # join, so the save can't be CONFIRMED over it even when it
