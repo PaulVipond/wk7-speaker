@@ -36,10 +36,6 @@ survive power cycles.
 
 ## What's in this folder
 
-- `WK7-reforged/` — clone of github.com/tomkubik/WK7-reforged (community
-  firmware: AirPlay 2, Spotify Connect, moOde, Alpine chroot in /data).
-  Key reading: `WK7-software-for-unlocked-bootloader/wk7-probe/REPORT.md` and
-  `MICOM_PROTOCOL.md`.
 - `scripts/` — working tools from the rescue:
   - `all/provision-wifi.py` — cross-platform provisioning tool (Windows/
     macOS/Linux, Python 3 stdlib only — includes a built-in minimal RSA;

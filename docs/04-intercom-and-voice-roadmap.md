@@ -1,7 +1,6 @@
 # House Intercom, Voice Control & Music — End-State Architecture
 
-Target: four WK7s (kitchen / bedroom / lounge / garage) as rooms in a fully
-local smart home. No cloud dependencies anywhere.
+Target: four WK7s as rooms in a fully local smart home. No cloud dependencies anywhere.
 
 ## Capability map of one WK7
 

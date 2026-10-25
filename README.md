@@ -11,8 +11,7 @@
 > firmware — where the buttons, lights and audio pipeline were rebuilt
 > properly. One thing remains unsolved everywhere, including there: the
 > microphone. Nobody has unlocked it on this hardware; our own plan and
-> notes toward it are recorded in `docs/03`, and any findings would be a
-> first for the whole community.
+> notes toward it are recorded in `docs/03`.
 
 LG and Google switched off the servers this speaker depends on. If you have a
 WK7 that sits there showing amber lights, or one you factory-reset and can
@@ -32,7 +31,7 @@ with computers. It takes about 10 minutes, once.
   software that speaks the Cast protocol directly: Home Assistant (its
   Google Cast integration works — announcements, streams, scripts),
   mkchromecast, and similar local-first tools.
-- **Important limitation — being straight with you:** apps from Google and
+- **Important limitation:** apps from Google and
   Spotify (YouTube, the Chrome browser's Cast feature, the Spotify app) will
   NOT list this speaker. Those apps only show devices registered with
   Google's cloud, and that registration died when Google shut down the
@@ -64,7 +63,9 @@ with computers. It takes about 10 minutes, once.
 
 ## The one-time setup
 
-1. Power the speaker on and wait for its light show to finish.
+This relies on setting up Python on your machine. Google it if you're not sure how to do this.
+
+1. Factory reset your speaker, power cycle it and wait until it starts asking you to use Home Assistant.
 2. On the computer, connect to the speaker's own Wi-Fi network. It appears
    in your normal Wi-Fi list with a name like **"LG-WK7_XXXX.n019"** (the
    number is different each time — just pick the one starting with
@@ -121,8 +122,6 @@ protocol was reverse-engineered, are in `docs/01-wifi-provisioning.md`.
   `scripts/` (see docs/02).
 
 ## What can actually cast to it
-
-Being precise, because this is the biggest let-down to understand up front:
 
 - **Doesn't work:** YouTube, the Chrome browser's Cast feature, the Spotify
   app — anything that checks Google's device registry before showing a
