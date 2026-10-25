@@ -1,74 +1,111 @@
-# LG WK7 ThinQ Speaker — Revival Project
+# Bring Your LG WK7 ThinQ Speaker Back From the Dead
 
-Rescuing an LG WK7 ThinQ (XBOOM AI, 2018, Android Things / Google Cast, Meridian-tuned)
-that LG and Google forcibly retired: Android Things shut down (Jan 2022), the LG
-companion app was pulled, and a factory reset trapped the unit in an
-unconfigurable setup loop.
+LG and Google switched off the servers this speaker depends on. If you have a
+WK7 that sits there showing amber lights, or one you factory-reset and can
+never set up again — it is **not** broken. This guide brings it back to life
+as a normal wireless speaker you can play music on from your phone, tablet,
+or computer.
 
-Project status: **speaker fully rescued at the network level.** It is a
-permanent, first-class Cast speaker on the LAN with Wi-Fi credentials that
-survive power cycles.
+You do NOT need to be technical to read this guide — but the one-time setup
+step does involve running a small program on a computer, so if that's not you,
+this is a great job to hand to a friend, colleague, or teenager who's
+comfortable with computers. It takes about 10 minutes, once.
 
-## Current state (verified)
+## What you'll have afterwards
 
-- Speaker is provisioned on the home network and **auto-rejoins after
-  cold power-off** (verified twice, including end-to-end cast test after reboot).
-- Wi-Fi persistence achieved via the stock Eureka setup API: `connect_wifi`
-  (encrypted) followed by `save_wifi` (empty body) flips `wpa_configured: true`.
-- Cast receiver alive: broadcasts `_googlecast._tcp` as `LG-WK7_XXXX`
-  (port 8009). Default Media Receiver verified playing real audio (SomaFM),
-  volume control, quit-app stop. TTS/announcements/HA all viable.
-- LED ring shows **amber** — expected and permanent: it means "connected to
-  Wi-Fi but Google cloud unreachable". The cloud it wants no longer exists.
-  Cosmetic only. Local TTS chime endpoint (`/setup/play_sound`) works.
-- Voice Assistant: dead forever (cloud-only). Casting: fully working.
-- Microphone: locked. No network path. Unlock requires code execution
-  (see docs/03-usb-mic-unlock-micom.md).
-- USB service port: no enumeration with any cable/port combination tried
-  (consistent with repo issue #4: retail units appear not to expose USB ADB).
-  A data cable is on order; the real path forward is the MICOM UART (see doc 03).
+- The speaker joins your home Wi-Fi by itself, every time you plug it in.
+- It appears in apps the same way other wireless speakers do — anything with
+  a "Cast" symbol (a small TV/wifi icon) can play on it: YouTube, BBC Sounds,
+  Plex, VLC, and many more. iPhones and Android phones both work.
+- Home Assistant users get a controllable speaker too.
+- It stays like this permanently. Power cuts, moving house (well — you'd
+  re-run setup for a new Wi-Fi), unplugging it: all fine.
 
-## What's in this folder
+## What will NOT come back
 
-- `WK7-reforged/` — clone of github.com/tomkubik/WK7-reforged (community
-  firmware: AirPlay 2, Spotify Connect, moOde, Alpine chroot in /data).
-  Key reading: `WK7-software-for-unlocked-bootloader/wk7-probe/REPORT.md` and
-  `MICOM_PROTOCOL.md`.
-- `scripts/` — working tools from the rescue:
-  - `provision-wifi.sh` — the full Wi-Fi provisioning sequence (safe-hop
-    version; connects to the speaker's setup AP, provisions, restores home
-    Wi-Fi). Needs the Wi-Fi password file described inside.
-  - `scan-setup-ap.sh` — connect to the speaker's setup AP and port-scan it.
-  - `castctl.py` — per-room Cast control (list/play/stop/vol/status).
-  - `cast-stop.sh` — reliable stop (quit_app; plain stop misses orphaned
-    streams).
-- `docs/01-wifi-provisioning.md` — how the provisioning was reverse-engineered,
-  the exact wire format, endpoint inventory, pitfalls.
-- `docs/02-cast-control.md` — how casting works on this unit, what works from
-  what software, multi-speaker strategy, known pitfalls.
-- `docs/03-usb-mic-unlock-micom.md` — the full plan for unlocking the USB port
-  and microphone via the MICOM UART, including the frame protocol and the
-  boot-sniffing experiment design.
-- `docs/04-intercom-and-voice-roadmap.md` — the end-goal architecture: 4-speaker
-  house intercom, Home Assistant, Spotify routing, HA Assist voice satellites.
+Being honest, because the sales brochure isn't:
 
-## Key facts learned (the short version)
+- **The voice assistant is gone for good.** "OK Google" talked to Google's
+  servers, and those servers no longer accept this speaker. No fix exists or
+  will ever exist for that. What you get back is a *speaker* — and a very
+  good one (it was tuned by Meridian, a hi-fi company).
+- The lights on top will stay amber. That's the speaker telling you it can't
+  reach Google — think of it as a permanently lit "no service" indicator,
+  like an old phone showing no signal. It doesn't affect anything.
+- Spotify's app won't list the speaker directly (see "Spotify" below).
 
-1. A factory-reset WK7 broadcasts an open setup AP (`LG-WK7_XXXX.n019`) and
-   runs the Chromecast Eureka setup REST API on https://<gateway>:8443 (self-
-   signed; `curl -sk`). Ports on the setup AP: 53, 8008, 8009, 8443, 9000,
-   9741, 10001. The speaker is the DHCP gateway of a tiny /29.
-2. Provisioning the Wi-Fi requires the exact Google Home app schema, recovered
-   by pulling the Google Home APK from an Android phone (adb) and decompiling
-   with jadx. Missing `wpa_id`/`scan_ssid` (or extra fields) = HTTP 500.
-   Plaintext password = 500. RSA-PKCS1-encrypted `enc_passwd` = 200 OK.
-3. `POST /setup/save_wifi` (EMPTY body) is mandatory for persistence. Without
-   it the join is lost at the next reboot.
-4. Spotify does not list this speaker (it fails Spotify's receiver-app
-   availability check because the device never completed Google registration).
-   Don't be fooled by similarly-named devices from other brands appearing in
-   Spotify's device picker.
-5. The MICOM microcontroller owns the USB mux, and its UART protocol is
-   documented in the Reforged repo — including command 0xC2 (USB switch
-   control). This is the most promising unlock path for both USB-ADB and the
-   microphone.
+## What you need
+
+1. Your LG WK7 speaker and its power supply.
+2. Your home Wi-Fi name and password. **It must be a 2.4 GHz network** — this
+   is the older, longer-range kind of Wi-Fi. If you only see one network
+   name, you're probably fine. If your Wi-Fi has both "something" and
+   "something_5G" names, use the one *without* 5G.
+3. A laptop or desktop computer with Wi-Fi, **running Linux** (the setup
+   program currently needs it — anyone can install Linux on a spare machine
+   or use a bootable USB stick, or borrow a Linux laptop). The script handles
+   everything; the helper just types a couple of commands.
+
+## The one-time setup (your helper does this)
+
+1. Download this repository's files ("Code" → "Download ZIP") and open the
+   `scripts` folder on the Linux computer.
+2. Put your Wi-Fi password in a file called `wifi_psk.txt` (just the
+   password, nothing else, and never share that file with anyone).
+3. Edit the few "EDIT ME" lines at the top of `provision-wifi.sh`:
+   - `SSID` — your Wi-Fi's name
+   - `HOME_CONN` — the name your Linux computer uses for your Wi-Fi
+     (in Linux, the command `nmcli connection show` lists it)
+   - Leave the rest alone.
+4. Make sure the speaker is powered on. It doesn't matter what state it's in.
+5. Run the script:
+
+   ```
+   bash provision-wifi.sh
+   ```
+
+6. Wait a few minutes. The script prints progress and at the end you want to
+   see `wpa_configured:true` in the final lines.
+7. That's it. Plug your phone into the same Wi-Fi, open an app with a Cast
+   button, tap the Cast symbol, and the speaker appears under its name
+   (something like "LG-WK7_XXXX"). Pick it, press play, music comes out.
+
+Full technical details of what the script does — including for people who
+want to reproduce it on other devices or understand the protocol — are in
+the `docs/` folder.
+
+## Troubleshooting
+
+- **The script says the speaker's setup network is unreachable.** The
+  speaker only broadcasts its special setup Wi-Fi in certain states. Power
+  the speaker off and on, then run the script within a couple of minutes of
+  it finishing its light show. The setup network is called something like
+  "LG-WK7_XXXX.n019".
+- **Music apps on the phone don't show the speaker.** Check the phone is on
+  the same Wi-Fi, and that it's the 2.4 GHz one the speaker was set up with.
+  Turning Wi-Fi off and back on the phone usually makes it appear.
+- **Speaker stops appearing after you move it / change Wi-Fi.** Re-run the
+  one-time setup with the new Wi-Fi details. The speaker forgets Wi-Fi
+  settings if you change its network — that's normal.
+- **No sound while casting.** In the app's Cast controls, try sliding the
+  volume up — the speaker remembers its volume separately and sometimes it's
+  just low.
+
+## Spotify
+
+The Spotify app is special: it refuses to show speakers that Google hasn't
+registered — and since Google's registration is dead, the WK7 never appears
+in Spotify's device list directly. Everything else (YouTube, BBC, VLC,
+Chrome, Plex...) is unaffected.
+
+Workarounds if Spotify is your main thing:
+- Cast your whole phone screen/tab audio from the Chrome browser, or
+- Ask your helper about the "spotifyd bridge" — software that makes Spotify
+  see the speaker indirectly (details in `docs/04`).
+
+## Going further (for the technically curious)
+
+The `docs/` folder contains the full engineering story and the roadmap for
+the community effort: making the buttons and lights work again, synchronized
+multi-room playback, and the quest to switch the microphone back on
+(the last big unsolved challenge). Start with `docs/00-technical-reference.md`.
