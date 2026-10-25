@@ -159,6 +159,7 @@ def find_speaker_on_lan():
 _NS_RECEIVER = "urn:x-cast:com.google.cast.receiver"
 _NS_MEDIA = "urn:x-cast:com.google.cast.media"
 _NS_CONNECTION = "urn:x-cast:com.google.cast.tp.connection"
+_NS_HEARTBEAT = "urn:x-cast:com.google.cast.tp.heartbeat"
 _APP_DEFAULT_MEDIA_RECEIVER = "CC1AD845"
 
 
@@ -329,12 +330,50 @@ class CastClient:
             return state in ("PLAYING", "BUFFERING", "IDLE", "LOADING")
         return False
 
+    def service(self, wait=0.3):
+        """Reply to receiver PING frames and drain pending ones. Call
+        periodically while holding a session open — if the sender goes
+        stale (unanswered PINGs), this old firmware rotates the app
+        session and any later STOP with the old sessionId is ignored."""
+        try:
+            self.sock.settimeout(wait)
+            buf = b""
+            while True:
+                try:
+                    chunk = self.sock.recv(4096)
+                except socket.timeout:
+                    return
+                if not chunk:
+                    return
+                buf += chunk
+                while len(buf) >= 4:
+                    ln = int.from_bytes(buf[:4], "big")
+                    if len(buf) < 4 + ln:
+                        break
+                    frame, buf = buf[4:4 + ln], buf[4 + ln:]
+                    _, payload = _parse_frame(frame)
+                    if payload.get("type") == "PING":
+                        self._send("receiver-0", _NS_HEARTBEAT,
+                                   {"type": "PONG"})
+        except Exception:
+            return
+
     def stop_app(self):
-        # The receiver IGNORES a bare STOP — the sessionId is required
-        # (pychromecast always includes it; a session-less STOP is a no-op).
+        # The receiver ignores a session-less STOP. It also rotates the
+        # session if our connection went stale — so refresh the CURRENT
+        # sessionId right before stopping.
+        self._send("receiver-0", _NS_RECEIVER, {"type": "GET_STATUS"})
+        app = self._recv_until(
+            lambda ns, p: (p.get("type") == "RECEIVER_STATUS"
+                          and next((a for a in p.get("status", {})
+                                    .get("applications", [])
+                                    if a.get("appId") == _APP_DEFAULT_MEDIA_RECEIVER),
+                                   None) or None),
+            timeout=4)
+        sid = (app or {}).get("sessionId") or getattr(self, "session_id", None)
         payload = {"type": "STOP"}
-        if getattr(self, "session_id", None):
-            payload["sessionId"] = self.session_id
+        if sid:
+            payload["sessionId"] = sid
         self._send("receiver-0", _NS_RECEIVER, payload)
         return True
 
@@ -391,18 +430,28 @@ def api(ip, path, method="GET", body=None):
     return r.status, (json.loads(raw) if raw else {})
 
 
-def play_test_20s(ip, seconds=20):
+def play_test_20s(ip, seconds=20, settle=0):
     """Play the test stream for `seconds`, then stop it with the reliable
     receiver-level stop (a plain media-stop can miss orphaned streams).
+    `settle` seconds are waited first — right after provisioning the
+    speaker is still tearing down its hotspot and the stream is barely
+    audible until it finishes; waiting avoids that quiet period.
     Returns True if the stream started."""
+    if settle:
+        print(f"Waiting {settle} s for the speaker to settle on the network...")
+        time.sleep(settle)
     print(f"Playing a test radio station through the speaker for {seconds} seconds...")
     cc = run_playback_test(ip)
     if not cc:
         return False
-    for remaining in range(seconds, 0, -5):
+    remaining = seconds
+    while remaining > 0:
         print(f"  ...{remaining}s")
-        time.sleep(min(5, remaining))
-    stop_playback(cc)   # receiver-level STOP — the reliable method
+        step = min(5, remaining)
+        for _ in range(step * 2):
+            cc.service(0.5)   # answer receiver PINGs — keep the session ours
+        remaining -= step
+    stop_playback(cc)   # receiver-level STOP with a freshly-refreshed session
     print("Stopped.")
     return True
 
@@ -598,7 +647,7 @@ def main():
                 print("with a Cast symbol and the speaker will be listed.")
             else:
                 print(f"Found the speaker at {ip2}.")
-                if play_test_20s(ip2):
+                if play_test_20s(ip2, settle=15):
                     print("Everything works — the speaker is set up.")
                 else:
                     print("The speaker responded but the test stream didn't")
