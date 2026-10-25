@@ -24,10 +24,17 @@ with computers. It takes about 10 minutes, once.
 ## What you'll have afterwards
 
 - The speaker joins your home Wi-Fi by itself, every time you plug it in.
-- It appears in apps the same way other wireless speakers do — anything with
-  a "Cast" symbol (a small TV/wifi icon) can play on it: YouTube, BBC Sounds,
-  Plex, VLC, and many more. iPhones and Android phones both work.
-- Home Assistant users get a controllable speaker too.
+- **You can play audio on it over your network** — with the tools in this
+  repository (`--test` plays a built-in radio-station test), and with
+  software that speaks the Cast protocol directly: Home Assistant (its
+  Google Cast integration works — announcements, streams, scripts),
+  mkchromecast, and similar local-first tools.
+- **Important limitation — being straight with you:** apps from Google and
+  Spotify (YouTube, the Chrome browser's Cast feature, the Spotify app) will
+  NOT list this speaker. Those apps only show devices registered with
+  Google's cloud, and that registration died when Google shut down the
+  platform. The speaker still speaks the Cast protocol — those particular
+  apps just refuse to talk to devices Google no longer recognizes.
 - It stays like this permanently. Power cuts and unplugging it are fine.
 
 ## What will not come back
@@ -74,9 +81,9 @@ with computers. It takes about 10 minutes, once.
 6. The tool then offers to play a test — reconnect the computer to your home
    Wi-Fi when it asks, press Enter, and music plays from the speaker. Press
    Enter again to stop it.
-7. After that, connect your phone to the same Wi-Fi, open any app with a
-   Cast symbol, tap it, and the speaker appears (named like "LG-WK7_XXXX").
-   Pick it, press play, and music plays.
+7. After that, the speaker is on your network for good. To play audio use
+   the tools above — or see "What can actually cast to it" below for the
+   honest list of what works and what doesn't.
 
 **Quick test any time** — if the speaker is already set up and this computer
 is on your home Wi-Fi, you can make it play a test radio station and stop
@@ -98,27 +105,37 @@ protocol was reverse-engineered, are in `docs/01-wifi-provisioning.md`.
   the speaker off and on, then run the script within a couple of minutes of
   it finishing its light show. The setup network is called something like
   "LG-WK7_XXXX.n019".
-- **Music apps on the phone don't show the speaker.** Check the phone is on
-  the same Wi-Fi, and that it's the 2.4 GHz one the speaker was set up with.
-  Turning Wi-Fi off and back on the phone usually makes it appear.
-- **Speaker stops appearing after you change your Wi-Fi.** Re-run the
+- **YouTube / Chrome / Spotify don't show the speaker.** This is not a fault
+  and not fixable by reconnecting — those apps only list devices registered
+  with Google's cloud, and this speaker's registration no longer exists.
+  See "What can actually cast to it" below.
+- **Speaker stops working after you change your Wi-Fi.** Re-run the
   one-time setup with the new Wi-Fi details. This is expected — the speaker
   keeps settings for the Wi-Fi it knows.
-- **No sound while casting.** In the app's Cast controls, try sliding the
-  volume up — the speaker keeps its own volume setting and sometimes it's
-  simply low.
+- **No sound during the built-in test.** The tool plays at whatever volume
+  the speaker remembers — the volume can be raised later with the tools in
+  `scripts/` (see docs/02).
 
-## Spotify
+## What can actually cast to it
 
-The Spotify app is special: it only shows speakers that Google has
-registered, and since Google's registration no longer works for this model,
-the WK7 never appears in Spotify's device list directly. Other apps
-(YouTube, BBC, VLC, Chrome, Plex...) are unaffected.
+Being precise, because this is the biggest let-down to understand up front:
+
+- **Doesn't work:** YouTube, the Chrome browser's Cast feature, the Spotify
+  app — anything that checks Google's device registry before showing a
+  speaker. Those senders see the speaker on the network and hide it because
+  its Google registration died with the platform.
+- **Does work:** the tools in this repository; Home Assistant (its Cast
+  integration speaks the protocol directly — announcements, radio, scripts);
+  mkchromecast; and any software using the Default Media Receiver path.
+- **Possibly works:** some third-party casting apps (VLC, BubbleUPnP and
+  friends) — it depends on which receiver app they launch. Untested; try
+  yours and it'll be obvious in seconds.
 
 Options if Spotify is your main music source:
-- Cast your whole phone screen or tab audio from the Chrome browser, or
-- Ask your helper about the "spotifyd bridge" — software that lets Spotify
-  reach the speaker indirectly (details in `docs/04`).
+- The "spotifyd bridge" — software that lets Spotify reach the speaker
+  indirectly (details in `docs/04`), or
+- The community firmware (WK7-reforged) installs native Spotify Connect on
+  the speaker itself — see "Going further".
 
 ## Going further
 

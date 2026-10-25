@@ -9,20 +9,36 @@ not matter for casting to the Default Media Receiver.
 Verified working:
 - pychromecast `play_media(<stream-url>, 'audio/mpeg')` — real audio out,
   state PLAYING, volume control.
-- Any sender using the Default Media Receiver: Chrome tab/desktop casting,
-  VLC, BubbleUPnP, Hi-Fi Cast, Plex, mkchromecast (system audio).
+- `scripts/all/provision-wifi.py --test` (our stdlib CastV2 client) — the
+  built-in 20-second playback test.
 - `POST /setup/play_sound {"sound_id":1}` — local confirmation chime.
 - Home Assistant: the Google Cast integration is pychromecast underneath, so
   the speaker appears as a media_player entity (play/pause/stop/volume,
-  play_media, TTS announcements) — no cloud involved.
+  play_media, TTS announcements) — no cloud involved. (High confidence from
+  the shared stack; not yet tested on a live HA install.)
 
-Not working / never will:
+NOT working — Google/Spotify senders hide unregistered devices (field-tested
+on YouTube's app and Chrome's Cast feature, phone and desktop; Spotify was
+confirmed earlier):
+- YouTube app: speaker not listed.
+- Chrome browser Cast (tab/desktop audio): speaker not listed.
+- Spotify app: speaker not listed.
+These senders discover the speaker over mDNS (avahi shows it clearly) but
+then check Google's cloud device registry / receiver-app entitlement before
+showing it, and a device whose registration died with Android Things fails
+that check. The Cast protocol itself is fully alive — only the walled-garden
+senders refuse. Expect similar behavior from any sender that launches its
+own cloud-hosted receiver app.
+
+Untested, probably device-by-device:
+- Third-party casting apps (VLC, BubbleUPnP, LocalCast, Plex) — depends on
+  whether they use the Default Media Receiver path (works) or their own
+  registered receiver apps (likely gated). mkchromecast (pychromecast-based)
+  should work.
+
+Also dead, permanently:
 - Google Assistant voice (cloud-only, permanently dead).
 - Google Home app management and Cast groups (cloud-managed).
-- Spotify does NOT list the speaker (fails Spotify's receiver-app
-  availability check on an unregistered device) — the device your Spotify app
-  calls "Living Room Speaker" is some other brand of speaker on the LAN, not
-  the WK7. Spotify workaround: spotifyd/librespot bridge (see doc 04).
 
 ## Multi-speaker layout
 
