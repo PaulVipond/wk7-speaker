@@ -65,7 +65,7 @@ with computers. It takes about 10 minutes, once.
 
 This relies on setting up Python on your machine. Google it if you're not sure how to do this.
 
-1. Factory reset your speaker, power cycle it and wait until it starts asking you to use Home Assistant.
+1. Factory reset your speaker, power cycle it and wait until it starts asking you to use the Google Home app.
 2. On the computer, connect to the speaker's own Wi-Fi network. It appears
    in your normal Wi-Fi list with a name like **"LG-WK7_XXXX.n019"** (the
    number is different each time — just pick the one starting with
