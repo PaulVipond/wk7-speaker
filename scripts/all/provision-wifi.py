@@ -290,6 +290,7 @@ class CastClient:
                          .get("applications", [])
                          if a.get("appId") == _APP_DEFAULT_MEDIA_RECEIVER),
                         None)
+        self.session_id = None
 
         # 1) see whether the Default Media Receiver is already running
         self._send("receiver-0", _NS_RECEIVER, {"type": "GET_STATUS"})
@@ -309,6 +310,7 @@ class CastClient:
         if not app:
             return False
         session_id, transport_id = app["sessionId"], app["transportId"]
+        self.session_id = session_id
 
         # 2) load the stream into the app
         self._send(transport_id, _NS_CONNECTION, {"type": "CONNECT",
@@ -328,7 +330,12 @@ class CastClient:
         return False
 
     def stop_app(self):
-        self._send("receiver-0", _NS_RECEIVER, {"type": "STOP"})
+        # The receiver IGNORES a bare STOP — the sessionId is required
+        # (pychromecast always includes it; a session-less STOP is a no-op).
+        payload = {"type": "STOP"}
+        if getattr(self, "session_id", None):
+            payload["sessionId"] = self.session_id
+        self._send("receiver-0", _NS_RECEIVER, payload)
         return True
 
     def close(self):
