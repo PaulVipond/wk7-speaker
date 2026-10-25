@@ -70,9 +70,37 @@ dead backend).
 
 ## 3. Cast (observed via pychromecast + our stdlib client)
 
-- Discovery: `_googlecast._tcp` mDNS, port 8009. TXT record carries friendly
-  name (`fn=`), model (`md=`), hotspot BSSID (`bs=`), `st=2` (never
-  registered with Google).
+- Discovery: `_googlecast._tcp` mDNS, port 8009. Observed TXT record
+  fields on this unit (meanings partly community-inferred, not official):
+
+  | Field | Observed value | Meaning |
+  |---|---|---|
+  | `fn` | `LG-WK7_XXXX` | friendly name (set via set_eureka_info) |
+  | `md` | `LG WK7 ThinQ Speaker` | model string |
+  | `id` | UUID | cast device UUID (regenerated each factory reset) |
+  | `cd` | 32-hex hash | device certificate digest — **regenerated each
+    factory reset**, never signed/activated by Google |
+  | `st` | `2` | setup state: not fully set up / unregistered |
+  | `rs` | empty | receiver state |
+  | `nf` | `1` | ? (community: "not foreground"?) |
+  | `bs` | hotspot BSSID | the setup AP's BSSID persists in the record |
+  | `ca` | `67588` | capabilities bitmask (community-inferred) |
+  | `ve` | `05` | version |
+  | `rm` / `ic` | hash / `/setup/icon.png` | ? / icon path |
+
+  **Sender gating (field-tested; mechanism inferred, not officially
+  documented anywhere):** consumer senders built on Google's Cast SDK
+  (YouTube app, Chrome's Cast feature, Spotify) discover the device via
+  mDNS but do not list it. Their filter combines the discovery flags
+  (`st=2` = unregistered) with the app-availability handshake — the
+  sender asks the device (CastV2 AppAvailability) whether it can run the
+  sender's receiver app, and the answer on a registered Cast device
+  traces back to Google's cloud registry through factory-issued device
+  certificates. This unit's identity is self-generated (cd changes per
+  reset) and its registration died with Android Things, so the handshake
+  chain fails and the senders hide the device. Senders that skip these
+  checks (VLC — verified; pychromecast/HA; mkchromecast; this repo's
+  client) work normally.
 - Port 8009 speaks **CastV2**: TLS (self-signed, no verify) + 4-byte
   big-endian length prefix + a CastMessage protobuf:
 
