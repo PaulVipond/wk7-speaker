@@ -88,8 +88,25 @@ curl -sk -X POST -H "Content-Type: application/json" -d '' \
   https://<speaker>:8443/setup/save_wifi
 ```
 
-Reply `{"setup_state":64}` and `wpa_configured: true`. Verified: after this,
-the speaker rejoins Wi-Fi automatically after cold power-off (tested twice).
+Reply `{"setup_state":64}` and `wpa_configured: true`. Persistence notes,
+all reboot-verified on real hardware:
+
+- Provisioned with a **2.4 GHz** SSID: settings survive cold power-off
+  (verified repeatedly).
+- Provisioned with a **5 GHz-named** SSID (dual-band router): the join
+  succeeds and `wpa_configured` reads true, but after a power cycle the
+  unit reverted to setup mode with the credentials gone. Unresolved whether
+  the LAN-side save_wifi doesn't persist or the unit wipes config when it
+  cannot rejoin at boot — either way, **provision the 2.4 GHz name**.
+- The save request can land while its HTTP response is lost (AP teardown
+  mid-reply): an HTTP 000/refused save may still have succeeded. Never
+  infer the save state from the HTTP result — re-read `wpa_configured`
+  from the speaker.
+- The setup AP teardown window after association is sometimes seconds and
+  sometimes immediate — a save sent right after `connect_wifi` returns 200
+  (before waiting for association) is the most reliable over-AP timing.
+- The only trustworthy persistence test is a power cycle: reboot-verify
+  once after provisioning.
 
 ## 5. After joining the LAN
 

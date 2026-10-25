@@ -114,6 +114,12 @@ protocol was reverse-engineered, are in `docs/01-wifi-provisioning.md`.
   and not fixable by reconnecting — those apps only list devices registered
   with Google's cloud, and this speaker's registration no longer exists.
   See "What can actually cast to it" below.
+- **Speaker forgets the Wi-Fi after a power cut.** Make sure you set it up
+  with your **2.4 GHz network name** — set-ups made with a 5 GHz-named
+  network were observed to work at first but not survive the reboot. Re-run
+  the one-time setup with the 2.4 GHz name. To be confident a set-up stuck,
+  switch the speaker off and on once after setup — if it comes back and
+  `--test` finds it, the settings are permanent.
 - **Speaker stops working after you change your Wi-Fi.** Re-run the
   one-time setup with the new Wi-Fi details. This is expected — the speaker
   keeps settings for the Wi-Fi it knows.

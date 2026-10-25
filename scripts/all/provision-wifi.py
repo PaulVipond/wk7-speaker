@@ -548,6 +548,15 @@ def main():
         print(f"The speaker rejected the request (HTTP {status}).")
         return 1
 
+    # Send the save IMMEDIATELY while the setup network is still reachable —
+    # it can tear down within seconds of the join, and this early save is the
+    # path most reliably observed to PERSIST (verified across power cycles).
+    # Best-effort: the retry loop below verifies the actual state.
+    try:
+        api(ip, "/setup/save_wifi", "POST", "")
+    except Exception:
+        pass
+
     print("Connecting... (up to 2 minutes)")
     connected = False
     for _ in range(40):
@@ -660,6 +669,14 @@ def main():
             print("Some tools (e.g. VLC's advanced casting) can use it directly.")
             print("It may change after router reboots; if tools lose the speaker,")
             print("re-run this tool with --test to see its current address.")
+        if lan_ip:
+            print()
+            print("One last thing to be certain: switch the speaker off and")
+            print("on once. If it comes back and --test finds it, the Wi-Fi")
+            print("settings are permanently saved. (If it ever reverts to its")
+            print('setup network, just connect to it and run this tool again')
+            print('— and use your 2.4 GHz network name; 5 GHz-named networks')
+            print('were observed not to survive the reboot.)')
         print()
         print('To play music: VLC on your phone or computer lists the speaker')
         print(f'in its "Playback -> Renderer" menu (it appears as "{name}").')
