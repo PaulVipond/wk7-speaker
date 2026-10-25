@@ -86,14 +86,25 @@ Safety: the tap is passive in phase 1 — zero risk to the speaker.
 Capture the UART during boot in these scenarios, logging raw bytes with
 timestamps:
 
-| Run | Cable in service port | Held at power-on | Question it answers |
-|---|---|---|---|
-| A | no | — | baseline: does boot ever send 0xC2? |
-| B | yes (to laptop, lsusb/dmesg -w running) | — | does LG's code flip the mux when a host is present? what state byte? |
-| C | yes | play/pause (the 5 s factory-reset hold, short of confirming) | does a long-press route USB? |
-| D | yes | mic mute | service combo? |
-| E | yes | vol− or function | service combo? |
-| F | yes | each in turn: other buttons | catch hidden key codes 0x83/0x85/0x91 |
+| Run | Cable in service port | Held at power-on | Question it answers | Result (2026-10-25, this unit) |
+|---|---|---|---|---|
+| A | no | — | baseline: does boot ever send 0xC2? | (UART tap not yet wired — pending) |
+| B | yes (to laptop, lsusb/udevadm monitor running) | — | does LG's code flip the mux when a host is present? | **NEGATIVE — zero USB events across full boot; the handshake window never begins** |
+| C | yes | play/pause (short hold, factory-reset avoided) | does a long-press route USB? | **NEGATIVE** |
+| D | yes | mic mute | service combo? | **NEGATIVE** |
+| E | yes | vol− | service combo? | **NEGATIVE** |
+| F | yes | each in turn: other buttons | catch hidden key codes 0x83/0x85/0x91 | (pending) |
+
+Field-test conclusion (runs B–E): the retail firmware never routes the USB
+controller to the external port under any externally-triggerable boot
+condition. Watcher methodology: `udevadm monitor --kernel --subsystem-match=usb`
+(as a normal user — more reliable than watching dmesg scroll), validated by
+plugging a known device mid-run. This matches the two independent failures
+in the WK7-reforged repo's issue #4. Residual uncertainty: the cable itself
+is unverified as a data cable (no second micro-USB device available to test
+with) — but three identical reports elsewhere plus a cable sold as a data
+cable make the MICOM conclusion the strong one. **The UART path below is
+the only remaining route to USB.**
 
 Expected outcomes: in run A we likely see the boot-time `0xC2` frames with the
 "keep on Wi-Fi" state value; in run B (if the handshake logic is intact) the
