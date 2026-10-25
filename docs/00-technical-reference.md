@@ -49,7 +49,7 @@ survive power cycles.
   - `castctl.py` — per-room Cast control (list/play/stop/vol/status).
   - `micom-sniff.py` — MICOM UART tap: live frame decoder + frame sender
     (see doc 03).
-  - `linux/cast-stop.sh` — reliable stop (quit_app; plain stop misses
+  - `linux/cast-stop.py` — reliable stop (quit_app; plain stop misses
     orphaned streams).
 - `docs/01-wifi-provisioning.md` — how the provisioning was reverse-engineered,
   the exact wire format, endpoint inventory, pitfalls.

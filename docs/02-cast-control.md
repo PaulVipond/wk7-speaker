@@ -55,7 +55,7 @@ Opus/RTP multicast or AirPlay 2/nqptp) — see doc 04.
 1. **Orphaned streams**: media launched by a sender that later exited keeps
    playing. A NEW sender reports "no session is active" and
    `media_controller.stop()` does nothing. Kill playback with
-   `cast.quit_app()` (`scripts/linux/cast-stop.sh`). Verify silence before claiming
+   `cast.quit_app()` (`scripts/linux/cast-stop.py`). Verify silence before claiming
    success — the stop-from-a-fresh-sender path lies.
 2. **pychromecast API (v13+)**: `get_chromecasts()` returns a tuple
    `(casts, browser)`; metadata is `cast.cast_info.friendly_name/.host`
