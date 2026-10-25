@@ -513,10 +513,20 @@ def main():
     if not ssid:
         print("No Wi-Fi name given — cancelling. Nothing was changed.")
         return 1
-    psk = getpass.getpass("Step 4: your home Wi-Fi password (input is hidden): ")
-    if not psk:
-        print("No password given — cancelling. Nothing was changed.")
-        return 1
+    # Type-to-hidden input makes typos invisible, so confirm by double entry.
+    # (A plain terminal cannot detect CAPS LOCK — hence the reminder below.)
+    print("Step 4: type your home Wi-Fi password twice to confirm.")
+    print("        Typing is hidden — check CAPS LOCK is off before you start.")
+    psk = ""
+    while True:
+        first = getpass.getpass("  Password: ")
+        again = getpass.getpass("  Type it once more to confirm: ")
+        if not first or first != again:
+            print("  Those two didn't match (or were empty) — try again.")
+            print("  Reminder: check CAPS LOCK.")
+            continue
+        psk = first
+        break
 
     pub_b64 = info.get("public_key")
     if not pub_b64:
