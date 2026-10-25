@@ -60,6 +60,9 @@ survive power cycles.
   boot-sniffing experiment design.
 - `docs/04-intercom-and-voice-roadmap.md` — the end-goal architecture: 4-speaker
   house intercom, Home Assistant, Spotify routing, HA Assist voice satellites.
+- `docs/05-protocol-reference.md` — the consolidated protocol reference:
+  setup AP behavior, Eureka REST API (exact schemas), CastV2 wire protocol
+  (protobuf framing + handshake rules), MICOM summary, firmware facts.
 
 ## Key facts learned (the short version)
 
