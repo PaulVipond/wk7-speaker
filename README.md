@@ -78,6 +78,14 @@ with computers. It takes about 10 minutes, once.
    Cast symbol, tap it, and the speaker appears (named like "LG-WK7_XXXX").
    Pick it, press play, and music plays.
 
+**Quick test any time** — if the speaker is already set up and this computer
+is on your home Wi-Fi, you can make it play a test radio station and stop
+again with one command:
+
+```
+python3 scripts/all/provision-wifi.py --test
+```
+
 If you use Linux and prefer a fully automated version that switches Wi-Fi
 for you (including the rollback), there is one in `scripts/linux/` —
 `provision-wifi.sh`. The technical details of both, including how the
