@@ -16,6 +16,11 @@ WHAT YOU DO:
   5. Wait for "SUCCESS", then reconnect your computer to your home Wi-Fi.
   6. Done — the speaker now appears in any app with a Cast symbol.
 
+QUICK TEST ANY TIME (speaker already set up, computer on home Wi-Fi):
+      python3 provision-wifi.py --test
+  Finds the speaker on your network and plays a test radio station
+  through it. Press Enter to stop.
+
 Your Wi-Fi password is used only to send it to the speaker on your own
 network, encrypted, and is never stored or sent anywhere else.
 
@@ -379,7 +384,40 @@ def api(ip, path, method="GET", body=None):
     return r.status, (json.loads(raw) if raw else {})
 
 
+def quick_test():
+    """Standalone mode: find the speaker on the home network and play the
+    test stream. Returns exit code."""
+    print("=== LG WK7 speaker quick test ===")
+    print()
+    print("Looking for the speaker on your network (a few seconds)...")
+    ip = None
+    for _ in range(6):
+        ip = find_speaker_on_lan()
+        if ip:
+            break
+        time.sleep(5)
+    if not ip:
+        print("No LG WK7 found on this network. Check this computer is on")
+        print("your home Wi-Fi and the speaker is powered on.")
+        return 1
+    print(f"Found the speaker at {ip} — playing a test radio station now...")
+    cc = run_playback_test(ip)
+    if not cc:
+        print("The speaker responded but the test stream didn't start.")
+        return 1
+    try:
+        input("Music should be playing from the speaker. "
+              "Press Enter to stop it...")
+    except EOFError:
+        pass
+    stop_playback(cc)
+    print("Stopped. The speaker is working.")
+    return 0
+
+
 def main():
+    if "--test" in sys.argv:
+        return quick_test()
     print("=== LG WK7 speaker setup ===")
     print()
     print("Step 1: connect this computer's Wi-Fi to the speaker's setup network")
