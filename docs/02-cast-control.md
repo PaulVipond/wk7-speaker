@@ -33,9 +33,26 @@ own cloud-hosted receiver app.
 Verified working, second data point:
 - **VLC** (PC, snap build): casts by launching the Default Media Receiver —
   the ungated path — and held a clean receiver session for a full test run.
-  VLC's renderer discovery is plain mDNS (no Google registry check), so it
-  appears in Playback → Renderer. Verified via direct IP:
-  `vlc --intf dummy --sout '#transcode{acodec=aac,ab=128,channels=2,samplerate=44100}:chromecast{ip=<speaker>}' <url>`
+
+### Using VLC day to day
+
+- **GUI (no address needed):** Playback → Renderer → pick the speaker
+  (shows as its friendly name, e.g. "LG-WK7_XXXX"). Discovery is plain
+  mDNS, so it appears on any machine on the same Wi-Fi. Takes a minute to
+  appear after the speaker joins the network.
+- **CLI fallback (needs the speaker's IP):** if the speaker doesn't show in
+  the renderer menu, cast straight to its address:
+  ```
+  vlc --intf dummy --quiet \
+    --sout '#transcode{acodec=aac,ab=128,channels=2,samplerate=44100}:chromecast{ip=<speaker-ip>}' \
+    --no-audio <url-or-file>
+  ```
+  (drop `--intf dummy`/`--no-audio` to keep local playback too)
+- **Where the IP comes from:** the setup tool prints the speaker's address
+  at the end of provisioning, and `python3 scripts/all/provision-wifi.py
+  --test` shows it any time. Caveat: it's a DHCP lease — it can change after
+  router reboots; re-run `--test` (or check your router's client list) if
+  tools lose the speaker.
 
 Untested, probably app-by-app:
 - Other third-party casting apps (BubbleUPnP, LocalCast, Plex) — same

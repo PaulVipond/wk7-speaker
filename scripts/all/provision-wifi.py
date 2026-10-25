@@ -640,6 +640,7 @@ def main():
             ans = "n"
         if ans != "n" and ans != "no":
             ip2 = lan_ip or find_speaker_on_lan()
+            lan_ip = ip2 or lan_ip  # remember it for the final summary
             if not ip2:
                 print("Couldn't find the speaker on your network yet — give it")
                 print("a minute, or check this computer is on your home Wi-Fi.")
@@ -653,10 +654,16 @@ def main():
                     print("The speaker responded but the test stream didn't")
                     print("start. It may still work fine from your phone apps —")
                     print("try the Cast symbol in YouTube or BBC Sounds.")
+        if lan_ip:
+            print()
+            print(f"NOTE THIS — the speaker's address on your network: {lan_ip}")
+            print("Some tools (e.g. VLC's advanced casting) can use it directly.")
+            print("It may change after router reboots; if tools lose the speaker,")
+            print("re-run this tool with --test to see its current address.")
         print()
-        print('From your phone: connect it to the same Wi-Fi, open any app')
-        print('with a Cast symbol, tap it, and the speaker appears')
-        print(f'(named "{name}").')
+        print('To play music: VLC on your phone or computer lists the speaker')
+        print(f'in its "Playback -> Renderer" menu (it appears as "{name}").')
+        print('Home Assistant users get it automatically as a media player.')
         print()
         print("  If apps don't show it, toggle the phone's Wi-Fi off and on.")
     else:

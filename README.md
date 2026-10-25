@@ -140,6 +140,31 @@ Options if Spotify is your main music source:
 - The community firmware (WK7-reforged) installs native Spotify Connect on
   the speaker itself — see "Going further".
 
+## Playing music with VLC (the everyday way)
+
+VLC is the easiest app that works with this speaker. It plays your own
+files, internet radio, and playlists, and its casting isn't blocked by
+Google. Get it free at videolan.org (also on Android and iPhone app stores).
+
+**On a computer:**
+1. Connect to the same Wi-Fi as the speaker, open VLC, and start playing
+   something.
+2. Open the menu **Playback → Renderer** (top menu bar; on some versions
+   it's under "Renderer" in the playback controls).
+3. The speaker appears in the list under its name (like "LG-WK7_XXXX") —
+   pick it and the sound moves to the speaker.
+
+**On a phone:** open VLC, play something, then in the playback menu look
+for the renderer / "play on another device" option and pick the speaker.
+
+**If the speaker doesn't appear in the list:** make sure the phone/computer
+is on your home Wi-Fi (not the speaker's old setup network, not mobile
+data). Casting discovery can take a minute after the speaker joins. As a
+fallback, VLC on a computer can also cast straight to the speaker's
+network address — the setup tool prints that address at the end of setup
+(and `python3 scripts/all/provision-wifi.py --test` shows it any time);
+see `docs/02-cast-control.md` for the exact command.
+
 ## Going further
 
 The `docs/` folder contains a technical overview and a potential roadmap for restoring function: making the buttons and lights work again, synchronized
