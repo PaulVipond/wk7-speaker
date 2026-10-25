@@ -1,0 +1,12 @@
+# Ignore the upstream community firmware clone
+WK7-reforged/
+
+# Secrets — never commit Wi-Fi credentials
+wifi_psk.txt
+*.psk
+
+# UART capture logs
+micom_raw_*.log
+*.log
+# local overrides (real SSIDs/IPs)
+scripts/local.sh
