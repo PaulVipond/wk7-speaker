@@ -403,6 +403,7 @@ def main():
     name = info.get("name", "?")
     model = info.get("detail", {}).get("model_name", "unknown model")
     print(f"Found: {name} ({model})")
+    lan_ip = None  # speaker's home-network address, once known
 
     ssid = input("Step 3: your home Wi-Fi name (2.4 GHz network): ").strip()
     if not ssid:
@@ -484,12 +485,36 @@ def main():
         import time
         time.sleep(5)
     if not saved:
-        # last chance: the speaker may now be reachable via home Wi-Fi...
+        # The common case: the speaker drops its setup network during the
+        # join, so the save can't be CONFIRMED over it even when it
+        # succeeded. The speaker is now reachable over the home network —
+        # confirm (or finish) the save there.
+        print()
+        print("The speaker switched to your home Wi-Fi while saving, so this")
+        print("tool lost contact through the setup network. Reconnect this")
+        print("computer to your home Wi-Fi, then press Enter to finish the")
+        print("check over the home network...")
         try:
-            _, st = api(ip, "/setup/eureka_info")
-            saved = bool(st.get("wpa_configured"))
-        except Exception:
+            input()
+        except EOFError:
             pass
+        print("Looking for the speaker on your home network (a few seconds)...")
+        for _ in range(6):
+            lan_ip = find_speaker_on_lan()
+            if lan_ip:
+                break
+            time.sleep(5)
+        if lan_ip:
+            _, st = api(lan_ip, "/setup/eureka_info")
+            if st.get("wpa_configured"):
+                saved = True
+            else:
+                try:
+                    status, _ = api(lan_ip, "/setup/save_wifi", "POST", "")
+                    if status == 200:
+                        saved = True
+                except Exception:
+                    pass
 
     print()
     print("=" * 60)
@@ -498,14 +523,19 @@ def main():
         print()
         # Offer the built-in playback test (also verifies everything
         # end-to-end from the home network, like a normal sender app).
+        if lan_ip:
+            prompt = ("Want to hear it working right away? Press Enter "
+                      "(or type n to skip)... ")
+        else:
+            prompt = ("Want to hear it working right away? First reconnect\n"
+                       "this computer to your home Wi-Fi, then press Enter "
+                       "(or type n to skip)... ")
         try:
-            ans = input("Want to hear it working right away? First reconnect\n"
-                        "this computer to your home Wi-Fi, then press Enter "
-                        "(or type n to skip)... ").strip().lower()
+            ans = input(prompt).strip().lower()
         except EOFError:
             ans = "n"
         if ans != "n" and ans != "no":
-            ip2 = find_speaker_on_lan()
+            ip2 = lan_ip or find_speaker_on_lan()
             if not ip2:
                 print("Couldn't find the speaker on your network yet — give it")
                 print("a minute, or check this computer is on your home Wi-Fi.")
