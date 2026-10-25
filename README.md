@@ -46,7 +46,8 @@ with computers. It takes about 10 minutes, once.
 - The lights on top will stay amber. This is the speaker saying it can't
   reach Google — similar to a phone showing "no service". It doesn't affect
   anything.
-- Spotify's app won't list the speaker directly (see "Spotify" below).
+- Spotify's app won't list the speaker directly (see "What can actually
+  cast to it" below).
 
 ## What you need
 
@@ -79,8 +80,8 @@ with computers. It takes about 10 minutes, once.
    speaker on your own network — never stored, never sent anywhere else).
 5. Wait for the big **SUCCESS** message.
 6. The tool then offers to play a test — reconnect the computer to your home
-   Wi-Fi when it asks, press Enter, and music plays from the speaker. Press
-   Enter again to stop it.
+   Wi-Fi when it asks, press Enter, and the tool plays a radio station
+   through the speaker for 20 seconds and then stops it automatically.
 7. After that, the speaker is on your network for good. To play audio use
    the tools above — or see "What can actually cast to it" below for the
    honest list of what works and what doesn't.

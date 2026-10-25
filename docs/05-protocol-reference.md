@@ -107,8 +107,12 @@ field 6  string   payload_utf8   (JSON)
   NEW sender sees "no session active" and media-level stop cannot kill it.
   Receiver-level STOP (with sessionId) or a fresh LAUNCH-and-STOP does.
 - Unregistered devices accept the Default Media Receiver (local, embedded)
-  fine. Spotify's receiver app is not available (hence Spotify never lists
-  the speaker). Google Home app management: dead.
+  fine. Field-tested sender gating: the YouTube app, Chrome browser Cast
+  (phone + desktop) and Spotify never list the speaker — they discover it
+  via mDNS, then check Google's cloud device registry / receiver-app
+  entitlement and hide it. Senders using the Default Media Receiver (VLC —
+  verified, this repo's client, pychromecast/HA, mkchromecast) work.
+  Google Home app management: dead.
 
 ## 4. MICOM UART (community-documented — WK7-reforged)
 

@@ -25,7 +25,9 @@ survive power cycles.
 - LED ring shows **amber** — expected and permanent: it means "connected to
   Wi-Fi but Google cloud unreachable". The cloud it wants no longer exists.
   Cosmetic only. Local TTS chime endpoint (`/setup/play_sound`) works.
-- Voice Assistant: dead forever (cloud-only). Casting: fully working.
+- Voice Assistant: dead forever (cloud-only). Casting: fully working for
+  direct-protocol senders (VLC, pychromecast/HA, this repo's tools);
+  YouTube/Chrome/Spotify senders hide the unregistered device (doc 02).
 - Microphone: locked. No network path. Unlock requires code execution
   (see docs/03-usb-mic-unlock-micom.md).
 - USB service port: no enumeration with any cable/port combination tried

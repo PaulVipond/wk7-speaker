@@ -7,7 +7,7 @@ local smart home. No cloud dependencies anywhere.
 
 | Capability | Stock (today) | With Reforged | Notes |
 |---|---|---|---|
-| Music out (Cast) | YES | via Cast? no — replaced | Chrome/VLC/HA/pychromecast all work |
+| Music out (Cast) | YES (VLC/HA/pychromecast) | via Cast? no — replaced | Google/Spotify senders hide the unregistered device (see doc 02) |
 | Spotify native | no (bridge needed) | YES (spotifyd on-device) | stock fails Spotify's availability check |
 | AirPlay 2 | no | YES (shairport-sync + nqptp) | whole Apple ecosystem + its own sync |
 | Synced multi-room | no (cloud Cast groups dead) | YES (moOde Opus/RTP or AirPlay 2) | stock same-URL casting drifts seconds |
