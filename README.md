@@ -7,9 +7,12 @@
 > microcontroller protocol), built complete replacement firmware, and
 > documented every finding. This repository is a follow-on: using those
 > findings to restore Wi-Fi and casting on a stock, factory-reset unit
-> without opening it. His project is also the place for further research —
-> the community effort to unlock the microphone, restore the buttons and
-> lights, and replace the firmware entirely lives there.
+> without opening it. His project is the active home for the community
+> firmware — where the buttons, lights and audio pipeline were rebuilt
+> properly. One thing remains unsolved everywhere, including there: the
+> microphone. Nobody has unlocked it on this hardware; our own plan and
+> notes toward it are recorded in `docs/03`, and any findings would be a
+> first for the whole community.
 
 LG and Google switched off the servers this speaker depends on. If you have a
 WK7 that sits there showing amber lights, or one you factory-reset and can
