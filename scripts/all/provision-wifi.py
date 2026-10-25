@@ -26,11 +26,16 @@ docs/01-wifi-provisioning.md.
 import base64
 import json
 import secrets
+import socket
 import ssl
 import sys
+import time
 import urllib.request
 import urllib.error
 import getpass
+from threading import Thread
+
+TEST_URL = "https://ice1.somafm.com/groovesalad-128-mp3"  # ambient radio, plain mp3
 
 DEFAULT_SPEAKER_IP = "192.168.255.249"  # the speaker's address on its setup network
 
@@ -98,7 +103,262 @@ def rsa_encrypt_pkcs1(message, n, e):
     return c.to_bytes(k, "big")
 
 # ---------------------------------------------------------------------------
-# Talking to the speaker
+# Finding the speaker on the home network (after the user reconnects)
+# ---------------------------------------------------------------------------
+
+def _lan_prefix():
+    """Local IPv4 /24 prefix, e.g. '192.168.1' (no packet is actually sent)."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("192.0.2.1", 9))  # TEST-NET — never routed
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = "192.168.1"
+    finally:
+        s.close()
+    return ip.rsplit(".", 1)[0]
+
+
+def find_speaker_on_lan():
+    """Scan the local /24 for the WK7 (Cast port 8009 + Eureka name check)."""
+    prefix = _lan_prefix()
+    hits = []
+
+    def probe(i):
+        try:
+            sock = socket.create_connection((f"{prefix}.{i}", 8009), timeout=0.8)
+            sock.close()
+            hits.append(f"{prefix}.{i}")
+        except Exception:
+            pass
+
+    threads = [Thread(target=probe, args=(i,)) for i in range(1, 255)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    for ip in hits:
+        try:
+            _, info = api(ip, "/setup/eureka_info?options=detail,320")
+            if str(info.get("name", "")).startswith("LG-WK7"):
+                return ip
+        except Exception:
+            pass
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Minimal CastV2 client — stdlib only (hand-rolled protobuf envelope).
+# ---------------------------------------------------------------------------
+
+_NS_RECEIVER = "urn:x-cast:com.google.cast.receiver"
+_NS_MEDIA = "urn:x-cast:com.google.cast.media"
+_NS_CONNECTION = "urn:x-cast:com.google.cast.tp.connection"
+_APP_DEFAULT_MEDIA_RECEIVER = "CC1AD845"
+
+
+def _varint(n):
+    out = bytearray()
+    while True:
+        b = n & 0x7F
+        n >>= 7
+        if n:
+            out.append(b | 0x80)
+        else:
+            out.append(b)
+            return bytes(out)
+
+
+def _sfield(field, value):
+    v = value.encode("utf-8") if isinstance(value, str) else value
+    return _varint((field << 3) | 2) + _varint(len(v)) + v
+
+
+def _cast_frame(source, dest, namespace, payload):
+    """CastMessage protobuf: protocol_version=0, string payload."""
+    msg = (b"\x08\x00"                      # field 1 varint 0 (CASTV2_1_0)
+           + _sfield(2, source)
+           + _sfield(3, dest)
+           + _sfield(4, namespace)
+           + b"\x28\x00"                    # field 5 varint 0 (STRING payload)
+           + _sfield(6, json.dumps(payload)))
+    return len(msg).to_bytes(4, "big") + msg
+
+
+def _parse_frame(data):
+    """Return (namespace, payload dict) from one CastMessage protobuf."""
+    fields = {}
+    off = 0
+    while off < len(data):
+        tag = 0
+        shift = 0
+        while True:
+            b = data[off]
+            off += 1
+            tag |= (b & 0x7F) << shift
+            shift += 7
+            if not (b & 0x80):
+                break
+        field, wt = tag >> 3, tag & 7
+        if wt == 0:
+            val = 0
+            shift = 0
+            while True:
+                b = data[off]
+                off += 1
+                val |= (b & 0x7F) << shift
+                shift += 7
+                if not (b & 0x80):
+                    break
+            fields[field] = val
+        elif wt == 2:
+            ln = 0
+            shift = 0
+            while True:
+                b = data[off]
+                off += 1
+                ln |= (b & 0x7F) << shift
+                shift += 7
+                if not (b & 0x80):
+                    break
+            fields[field] = data[off:off + ln]
+            off += ln
+    try:
+        payload = json.loads(fields.get(6, b"{}").decode("utf-8"))
+    except Exception:
+        payload = {}
+    return fields.get(4, b"").decode("utf-8"), payload
+
+
+class CastClient:
+    """Very small CastV2 client: launch the Default Media Receiver, load a
+    stream, stop it again. Just enough for the post-setup test."""
+
+    def __init__(self, ip):
+        self.src = "sender-wk7tool"
+        self.req = 0
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        raw = socket.create_connection((ip, 8009), timeout=5)
+        self.sock = ctx.wrap_socket(raw)
+        self.sock.settimeout(10)
+        # CastV2 requires a CONNECT handshake before anything else,
+        # otherwise the receiver answers {"type":"CLOSE"} immediately.
+        self._send("receiver-0", _NS_CONNECTION, {"type": "CONNECT", "userAgent": "wk7-setup-tool"})
+
+    def _send(self, dest, ns, payload):
+        self.req += 1
+        payload.setdefault("requestId", self.req)
+        self.sock.sendall(_cast_frame(self.src, dest, ns, payload))
+
+    def _recv_until(self, match, timeout=15):
+        """Read frames until match(namespace, payload) is truthy; return it."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                self.sock.settimeout(max(0.5, deadline - time.time()))
+                hdr = b""
+                while len(hdr) < 4:
+                    chunk = self.sock.recv(4 - len(hdr))
+                    if not chunk:
+                        return None
+                    hdr += chunk
+                ln = int.from_bytes(hdr, "big")
+                body = b""
+                while len(body) < ln:
+                    chunk = self.sock.recv(ln - len(body))
+                    if not chunk:
+                        return None
+                    body += chunk
+            except socket.timeout:
+                return None
+            ns, payload = _parse_frame(body)
+            got = match(ns, payload)
+            if got:  # matchers must return a truthy value (dict / state str)
+                return got
+        return None
+
+    def launch_and_load(self, url, content_type="audio/mpeg"):
+        def _app_from(p):
+            return next((a for a in p.get("status", {})
+                         .get("applications", [])
+                         if a.get("appId") == _APP_DEFAULT_MEDIA_RECEIVER),
+                        None)
+
+        # 1) see whether the Default Media Receiver is already running
+        self._send("receiver-0", _NS_RECEIVER, {"type": "GET_STATUS"})
+        app = self._recv_until(
+            lambda ns, p: (p.get("type") == "RECEIVER_STATUS"
+                           and (_app_from(p) or None)),
+            timeout=8)
+        # only LAUNCH if it wasn't running — sending LAUNCH while it runs
+        # kills the existing session and invalidates our transportId.
+        if not app:
+            self._send("receiver-0", _NS_RECEIVER,
+                       {"type": "LAUNCH", "appId": _APP_DEFAULT_MEDIA_RECEIVER})
+            app = self._recv_until(
+                lambda ns, p: (p.get("type") == "RECEIVER_STATUS"
+                               and (_app_from(p) or None)),
+                timeout=20)
+        if not app:
+            return False
+        session_id, transport_id = app["sessionId"], app["transportId"]
+
+        # 2) load the stream into the app
+        self._send(transport_id, _NS_CONNECTION, {"type": "CONNECT",
+                                                  "userAgent": "wk7-setup-tool"})
+        self._send(transport_id, _NS_MEDIA,
+                   {"type": "LOAD", "sessionId": session_id,
+                    "transportId": transport_id,
+                    "media": {"contentId": url, "streamType": "BUFFERED",
+                              "contentType": content_type},
+                    "autoplay": True, "current_time": 0})
+        state = self._recv_until(
+            lambda ns, p: (p.get("type") == "MEDIA_STATUS"
+                           and (p.get("status") or [{}])[0].get("playerState")),
+            timeout=25)
+        if isinstance(state, str):
+            return state in ("PLAYING", "BUFFERING", "IDLE", "LOADING")
+        return False
+
+    def stop_app(self):
+        self._send("receiver-0", _NS_RECEIVER, {"type": "STOP"})
+        return True
+
+    def close(self):
+        try:
+            self.sock.close()
+        except Exception:
+            pass
+
+
+def run_playback_test(speaker_ip):
+    """Play the test stream on the speaker.
+    Returns a CastClient on success (caller stops it via stop_playback),
+    or None on failure."""
+    try:
+        cc = CastClient(speaker_ip)
+    except Exception:
+        return None
+    try:
+        if cc.launch_and_load(TEST_URL):
+            return cc
+    except Exception:
+        pass
+    cc.close()
+    return None
+
+
+def stop_playback(cc):
+    try:
+        cc.stop_app()
+    finally:
+        cc.close()
+
+
+# ---------------------------------------------------------------------------
+# Talking to the speaker (setup API)
 # ---------------------------------------------------------------------------
 
 _ssl_ctx = ssl.create_default_context()
@@ -236,10 +496,41 @@ def main():
     if saved:
         print("SUCCESS!")
         print()
-        print('  1. Reconnect this computer to your home Wi-Fi.')
-        print("  2. Connect your phone to the same Wi-Fi.")
-        print("  3. Open any app with a Cast symbol, tap it, and the speaker")
-        print(f"     appears (named \"{name}\").")
+        # Offer the built-in playback test (also verifies everything
+        # end-to-end from the home network, like a normal sender app).
+        try:
+            ans = input("Want to hear it working right away? First reconnect\n"
+                        "this computer to your home Wi-Fi, then press Enter "
+                        "(or type n to skip)... ").strip().lower()
+        except EOFError:
+            ans = "n"
+        if ans != "n" and ans != "no":
+            ip2 = find_speaker_on_lan()
+            if not ip2:
+                print("Couldn't find the speaker on your network yet — give it")
+                print("a minute, or check this computer is on your home Wi-Fi.")
+                print("You can also just test from your phone: open any app")
+                print("with a Cast symbol and the speaker will be listed.")
+            else:
+                print(f"Found the speaker at {ip2} — playing a test radio")
+                print("station through it now...")
+                cc = run_playback_test(ip2)
+                if cc:
+                    try:
+                        input("Music should be playing from the speaker. "
+                              "Press Enter to stop it...")
+                    except EOFError:
+                        pass
+                    stop_playback(cc)
+                    print("Stopped. Everything works.")
+                else:
+                    print("The speaker responded but the test stream didn't")
+                    print("start. It may still work fine from your phone apps —")
+                    print("try the Cast symbol in YouTube or BBC Sounds.")
+        print()
+        print('From your phone: connect it to the same Wi-Fi, open any app')
+        print('with a Cast symbol, tap it, and the speaker appears')
+        print(f'(named "{name}").')
         print()
         print("  If apps don't show it, toggle the phone's Wi-Fi off and on.")
     else:

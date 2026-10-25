@@ -110,8 +110,17 @@ connect your computer to the speaker's setup network manually, then the
 tool: fetches `eureka_info`, parses the RSA public key with a built-in
 minimal DER/PKCS#1 implementation (no openssl dependency), encrypts the
 password, POSTs `connect_wifi`, waits for association, and POSTs
-`save_wifi`. Prompts for SSID/password interactively (password hidden);
-stores nothing.
+`save_wifi` (with retry + state verification — the setup AP can blip
+during the join). Prompts for SSID/password interactively (password
+hidden); stores nothing. After SUCCESS it offers a built-in playback
+test: it scans the local /24 for the speaker (port 8009 + Eureka name
+check) and plays a test radio station through a minimal hand-rolled
+CastV2 client (TLS + CastMessage protobuf + Default Media Receiver,
+all stdlib). CastV2 notes learned the hard way: the sender must open
+with `CONNECT` on the connection namespace or the receiver answers
+`CLOSE`; never `LAUNCH` the media receiver if it is already running
+(that kills the session and invalidates your transportId); and
+response matchers must return truthy values only.
 
 **`scripts/linux/provision-wifi.sh`** — fully automated Linux version using
 NetworkManager: hops to the setup AP with a guaranteed `trap`-based rollback

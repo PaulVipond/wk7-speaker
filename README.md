@@ -71,9 +71,12 @@ with computers. It takes about 10 minutes, once.
    password (typing the password is hidden, and it is sent only to the
    speaker on your own network — never stored, never sent anywhere else).
 5. Wait for the big **SUCCESS** message.
-6. Reconnect the computer to your home Wi-Fi, connect your phone to the same
-   Wi-Fi, open any app with a Cast symbol, tap it, and the speaker appears
-   (named like "LG-WK7_XXXX"). Pick it, press play, and music plays.
+6. The tool then offers to play a test — reconnect the computer to your home
+   Wi-Fi when it asks, press Enter, and music plays from the speaker. Press
+   Enter again to stop it.
+7. After that, connect your phone to the same Wi-Fi, open any app with a
+   Cast symbol, tap it, and the speaker appears (named like "LG-WK7_XXXX").
+   Pick it, press play, and music plays.
 
 If you use Linux and prefer a fully automated version that switches Wi-Fi
 for you (including the rollback), there is one in `scripts/linux/` —
