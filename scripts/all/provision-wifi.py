@@ -202,11 +202,34 @@ def main():
         return 1
 
     print("Step 6: saving the settings so they survive power cuts...")
-    try:
-        status, resp = api(ip, "/setup/save_wifi", "POST", "")
-    except Exception:
-        status, resp = 0, None
-    saved = status == 200
+    # The speaker's setup network can blip while it finalizes the join, so
+    # retry the save and then verify against the device's actual state.
+    saved = False
+    for attempt in range(3):
+        try:
+            status, _ = api(ip, "/setup/save_wifi", "POST", "")
+            if status == 200:
+                saved = True
+                break
+        except Exception:
+            pass  # network blip — the request may still have gone through
+        try:
+            _, st = api(ip, "/setup/eureka_info")
+            if st.get("wpa_configured"):
+                saved = True   # an earlier attempt already did it
+                break
+        except Exception:
+            pass
+        print("  (retrying the save step...)")
+        import time
+        time.sleep(5)
+    if not saved:
+        # last chance: the speaker may now be reachable via home Wi-Fi...
+        try:
+            _, st = api(ip, "/setup/eureka_info")
+            saved = bool(st.get("wpa_configured"))
+        except Exception:
+            pass
 
     print()
     print("=" * 60)
