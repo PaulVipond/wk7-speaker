@@ -165,6 +165,19 @@ network address — the setup tool prints that address at the end of setup
 (and `python3 scripts/all/provision-wifi.py --test` shows it any time);
 see `docs/02-cast-control.md` for the exact command.
 
+**Streams to try** (direct audio URLs, verified working): in VLC use
+Media → Open Network Stream and paste one of these, then cast:
+
+```
+https://ice1.somafm.com/groovesalad-128-mp3   — ambient/chill
+https://ice1.somafm.com/dronezone-128-aac     — spacey ambient
+https://ice1.somafm.com/defcon-128-mp3        — electronic
+https://stream.radioparadise.com/aac-128      — eclectic rock mix
+```
+
+Many more at somafm.com — copy the address of any "MP3" link on their
+playlist page.
+
 ## Going further
 
 The `docs/` folder contains a technical overview and a potential roadmap for restoring function: making the buttons and lights work again, synchronized
