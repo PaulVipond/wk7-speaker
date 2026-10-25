@@ -417,7 +417,7 @@ _ssl_ctx.check_hostname = False
 _ssl_ctx.verify_mode = ssl.CERT_NONE  # the speaker uses a self-signed certificate
 
 
-def api(ip, path, method="GET", body=None):
+def api(ip, path, method="GET", body=None, timeout=10):
     url = f"https://{ip}:8443{path}"
     data = None
     headers = {}
@@ -425,7 +425,7 @@ def api(ip, path, method="GET", body=None):
         data = body.encode("utf-8")
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
-    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=10) as r:
+    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=timeout) as r:
         raw = r.read()
     return r.status, (json.loads(raw) if raw else {})
 
@@ -557,18 +557,41 @@ def main():
     except Exception:
         pass
 
-    print("Connecting... (up to 2 minutes)")
+    print("Connecting...")
     connected = False
-    for _ in range(40):
-        import time
+    # Poll the setup network briefly — but note: the moment the speaker
+    # joins your Wi-Fi it can tear its setup network down IMMEDIATELY. Going
+    # unreachable here is usually the SUCCESS signal, not a failure.
+    for _ in range(10):
         time.sleep(3)
         try:
-            _, st = api(ip, "/setup/eureka_info")
+            _, st = api(ip, "/setup/eureka_info", timeout=3)
             if st.get("connected") and st.get("ssid") == ssid:
                 connected = True
                 break
         except Exception:
-            pass  # the setup network may blip while it associates
+            break  # setup network gone — the join almost certainly worked
+    if not connected:
+        print()
+        print("The speaker's setup network is gone — that usually means it")
+        print("joined your Wi-Fi. Looking for it on the home network...")
+        try:
+            input("If this computer has not already reconnected by itself,\n"
+                  "reconnect it to your home Wi-Fi now, then press Enter... ")
+        except EOFError:
+            pass
+        for _ in range(6):
+            lan_ip = find_speaker_on_lan()
+            if lan_ip:
+                break
+            time.sleep(5)
+        if lan_ip:
+            try:
+                _, st = api(lan_ip, "/setup/eureka_info")
+                if st.get("connected") and st.get("ssid") == ssid:
+                    connected = True
+            except Exception:
+                pass
     if not connected:
         print()
         print("The speaker did not confirm joining your Wi-Fi.")
@@ -581,21 +604,20 @@ def main():
     saved = False
     for attempt in range(3):
         try:
-            status, _ = api(ip, "/setup/save_wifi", "POST", "")
+            status, _ = api(ip, "/setup/save_wifi", "POST", "", timeout=3)
             if status == 200:
                 saved = True
                 break
         except Exception:
             pass  # network blip — the request may still have gone through
         try:
-            _, st = api(ip, "/setup/eureka_info")
+            _, st = api(ip, "/setup/eureka_info", timeout=3)
             if st.get("wpa_configured"):
                 saved = True   # an earlier attempt already did it
                 break
         except Exception:
             pass
         print("  (retrying the save step...)")
-        import time
         time.sleep(5)
     if not saved:
         # The common case: the speaker drops its setup network during the
@@ -603,20 +625,14 @@ def main():
         # succeeded. The speaker is now reachable over the home network —
         # confirm (or finish) the save there.
         print()
-        print("The speaker switched to your home Wi-Fi while saving, so this")
-        print("tool lost contact through the setup network. Reconnect this")
-        print("computer to your home Wi-Fi, then press Enter to finish the")
-        print("check over the home network...")
-        try:
-            input()
-        except EOFError:
-            pass
-        print("Looking for the speaker on your home network (a few seconds)...")
-        for _ in range(6):
-            lan_ip = find_speaker_on_lan()
-            if lan_ip:
-                break
-            time.sleep(5)
+        if not lan_ip:
+            print("Looking for the speaker on your home network (a few seconds)...")
+            print("(reconnect this computer to your home Wi-Fi if it hasn't)")
+            for _ in range(6):
+                lan_ip = find_speaker_on_lan()
+                if lan_ip:
+                    break
+                time.sleep(5)
         if lan_ip:
             _, st = api(lan_ip, "/setup/eureka_info")
             if st.get("wpa_configured"):
