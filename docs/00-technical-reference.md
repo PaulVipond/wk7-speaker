@@ -39,13 +39,18 @@ survive power cycles.
   Key reading: `WK7-software-for-unlocked-bootloader/wk7-probe/REPORT.md` and
   `MICOM_PROTOCOL.md`.
 - `scripts/` — working tools from the rescue:
-  - `provision-wifi.sh` — the full Wi-Fi provisioning sequence (safe-hop
-    version; connects to the speaker's setup AP, provisions, restores home
-    Wi-Fi). Needs the Wi-Fi password file described inside.
-  - `scan-setup-ap.sh` — connect to the speaker's setup AP and port-scan it.
+  - `all/provision-wifi.py` — cross-platform provisioning tool (Windows/
+    macOS/Linux, Python 3 stdlib only — includes a built-in minimal RSA;
+    prompts for Wi-Fi credentials, sends connect_wifi + save_wifi).
+  - `linux/provision-wifi.sh` — fully automated Linux provisioning (safe
+    NetworkManager hop with guaranteed rollback).
+  - `linux/scan-setup-ap.sh` — connect to the speaker's setup AP and
+    port-scan it.
   - `castctl.py` — per-room Cast control (list/play/stop/vol/status).
-  - `cast-stop.sh` — reliable stop (quit_app; plain stop misses orphaned
-    streams).
+  - `micom-sniff.py` — MICOM UART tap: live frame decoder + frame sender
+    (see doc 03).
+  - `linux/cast-stop.sh` — reliable stop (quit_app; plain stop misses
+    orphaned streams).
 - `docs/01-wifi-provisioning.md` — how the provisioning was reverse-engineered,
   the exact wire format, endpoint inventory, pitfalls.
 - `docs/02-cast-control.md` — how casting works on this unit, what works from

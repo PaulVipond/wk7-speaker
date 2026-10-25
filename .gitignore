@@ -9,4 +9,9 @@ wifi_psk.txt
 micom_raw_*.log
 *.log
 # local overrides (real SSIDs/IPs)
-scripts/local.sh
+
+# local overrides (real SSIDs/IPs)
+scripts/linux/local.sh
+scripts/all/local.py
+__pycache__/
+*.pyc

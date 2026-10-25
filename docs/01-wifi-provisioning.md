@@ -100,16 +100,29 @@ the speaker rejoins Wi-Fi automatically after cold power-off (tested twice).
   demanded authorization — verify `getprop ro.product.model` before touching
   anything).
 
-## 6. Ready-to-run script
+## 6. Ready-to-run tools
 
-`scripts/provision-wifi.sh` does the whole dance: hop to the setup AP with a
-guaranteed `trap`-based rollback to home Wi-Fi, build the PEM from
-`eureka_info`, encrypt, POST connect_wifi, wait for association, then POST
-save_wifi. Edit the variables at the top (Wi-Fi interface, home connection
-profile name, SSID) and put your Wi-Fi password in `wifi_psk.txt` beside the
-script (gitignored — never commit it). It must run on a machine with Wi-Fi and
-NetworkManager; the rollback makes it safe on a single-NIC laptop whose
-session depends on internet.
+**`scripts/all/provision-wifi.py`** — the recommended tool for everyone
+(Windows/macOS/Linux, needs only Python 3, no external libraries). You
+connect your computer to the speaker's setup network manually, then the
+tool: fetches `eureka_info`, parses the RSA public key with a built-in
+minimal DER/PKCS#1 implementation (no openssl dependency), encrypts the
+password, POSTs `connect_wifi`, waits for association, and POSTs
+`save_wifi`. Prompts for SSID/password interactively (password hidden);
+stores nothing.
+
+**`scripts/linux/provision-wifi.sh`** — fully automated Linux version using
+NetworkManager: hops to the setup AP with a guaranteed `trap`-based rollback
+to home Wi-Fi (safe on a single-NIC machine whose session depends on
+internet), builds the PEM with openssl, then connect_wifi + save_wifi.
+Edit the "EDIT ME" variables (Wi-Fi interface, home connection profile
+name, SSID) or drop overrides in `scripts/linux/local.sh` (gitignored).
+Put the Wi-Fi password in `wifi_psk.txt` beside it (gitignored).
+
+Note: the setup AP stops broadcasting once the speaker is fully configured
+and rebooted — a configured speaker that has been power-cycled shows up
+directly on your LAN (find it with `avahi-browse -rt _googlecast._tcp`).
+The tools only need the setup AP for first-time provisioning.
 
 ## 7. How the wire format was recovered (the technique)
 

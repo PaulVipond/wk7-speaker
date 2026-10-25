@@ -47,38 +47,37 @@ with computers. It takes about 10 minutes, once.
 2. Your home Wi-Fi name and password. **It must be a 2.4 GHz network** — the
    older, longer-range kind of Wi-Fi. If your Wi-Fi has both "something" and
    "something_5G" names, use the one *without* 5G.
-3. A laptop or desktop computer with Wi-Fi, **running Linux**. The setup
-   program needs Linux; a spare machine or a bootable USB stick works, or
-   borrow a Linux laptop. The script handles everything — the person helping
-   just types a couple of commands.
+3. Almost any computer (Windows, Mac, or Linux) with Wi-Fi, with
+   **Python 3** installed. Python 3 is free and usually already there on Mac
+   and Linux; on Windows it's a quick download from python.org.
 
-## The one-time setup (your helper does this)
+## The one-time setup
 
-1. Download this repository's files ("Code" → "Download ZIP") and open the
-   `scripts` folder on the Linux computer.
-2. Put your Wi-Fi password in a file called `wifi_psk.txt` (just the
-   password, nothing else, and don't share that file with anyone).
-3. Edit the few "EDIT ME" lines at the top of `provision-wifi.sh`:
-   - `SSID` — your Wi-Fi's name
-   - `HOME_CONN` — the name your Linux computer uses for your Wi-Fi
-     (in Linux, the command `nmcli connection show` lists it)
-   - Leave the rest alone.
-4. Make sure the speaker is powered on. It doesn't matter what state it's in.
-5. Run the script:
+1. Power the speaker on and wait for its light show to finish.
+2. On the computer, connect to the speaker's own Wi-Fi network. It appears
+   in your normal Wi-Fi list with a name like **"LG-WK7_XXXX.n019"** and
+   needs no password.
+3. Download this repository's files ("Code" → "Download ZIP"), open the
+   `scripts/all` folder, and run:
 
    ```
-   bash provision-wifi.sh
+   python3 provision-wifi.py
    ```
 
-6. Wait a few minutes. The script prints progress, and at the end you want to
-   see `wpa_configured:true` in the final lines.
-7. That's it. Connect your phone to the same Wi-Fi, open an app with a Cast
-   button, tap the Cast symbol, and the speaker appears under its name
-   (something like "LG-WK7_XXXX"). Pick it, press play, and music plays.
+   (On Windows, the command may be just `python`.)
 
-Full technical details of what the script does — including for people who
-want to reproduce it on other devices or understand the protocol — are in
-the `docs/` folder.
+4. Answer the questions when asked: your Wi-Fi's name, then your Wi-Fi
+   password (typing the password is hidden, and it is sent only to the
+   speaker on your own network — never stored, never sent anywhere else).
+5. Wait for the big **SUCCESS** message.
+6. Reconnect the computer to your home Wi-Fi, connect your phone to the same
+   Wi-Fi, open any app with a Cast symbol, tap it, and the speaker appears
+   (named like "LG-WK7_XXXX"). Pick it, press play, and music plays.
+
+If you use Linux and prefer a fully automated version that switches Wi-Fi
+for you (including the rollback), there is one in `scripts/linux/` —
+`provision-wifi.sh`. The technical details of both, including how the
+protocol was reverse-engineered, are in `docs/01-wifi-provisioning.md`.
 
 ## Troubleshooting
 
@@ -111,8 +110,7 @@ Options if Spotify is your main music source:
 
 ## Going further
 
-The `docs/` folder contains the full engineering story and the roadmap for
-the community effort: making the buttons and lights work again, synchronized
+The `docs/` folder contains a technical overview and a potential roadmap for restoring function: making the buttons and lights work again, synchronized
 multi-room playback, and unlocking the microphone (the last big unsolved
 challenge). Start with `docs/00-technical-reference.md`, and see
 [WK7-reforged](https://github.com/tomkubik/WK7-reforged) for the active
