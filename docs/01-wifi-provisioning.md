@@ -8,8 +8,10 @@ speaker's Eureka setup API — a protocol recovered by decompiling the app.
 
 After factory reset (and every boot while unconfigured), the WK7 broadcasts an
 open access point: `LG-WK7_XXXX.n019` (2.4 GHz, BSSID like
-FA:8F:CA:XX:XX:XX). The AP **beacons intermittently** — if a connect fails,
-rescan and retry; do not assume it's gone.
+FA:8F:CA:XX:XX:XX). The numeric suffix is **randomized on each reset** (one
+reset showed `_8764`, the next `_0169`), so match on the `LG-WK7` prefix
+rather than a remembered name. The AP **beacons intermittently** — if a
+connect fails, rescan and retry; do not assume it's gone.
 
 Connect with a locked-BSSID nmcli profile (flaky otherwise):
 

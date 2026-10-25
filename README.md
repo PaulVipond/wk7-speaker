@@ -55,8 +55,9 @@ with computers. It takes about 10 minutes, once.
 
 1. Power the speaker on and wait for its light show to finish.
 2. On the computer, connect to the speaker's own Wi-Fi network. It appears
-   in your normal Wi-Fi list with a name like **"LG-WK7_XXXX.n019"** and
-   needs no password.
+   in your normal Wi-Fi list with a name like **"LG-WK7_XXXX.n019"** (the
+   number is different each time — just pick the one starting with
+   "LG-WK7") and needs no password.
 3. Download this repository's files ("Code" → "Download ZIP"), open the
    `scripts/all` folder, and run:
 
