@@ -384,6 +384,22 @@ def api(ip, path, method="GET", body=None):
     return r.status, (json.loads(raw) if raw else {})
 
 
+def play_test_20s(ip, seconds=20):
+    """Play the test stream for `seconds`, then stop it with the reliable
+    receiver-level stop (a plain media-stop can miss orphaned streams).
+    Returns True if the stream started."""
+    print(f"Playing a test radio station through the speaker for {seconds} seconds...")
+    cc = run_playback_test(ip)
+    if not cc:
+        return False
+    for remaining in range(seconds, 0, -5):
+        print(f"  ...{remaining}s")
+        time.sleep(min(5, remaining))
+    stop_playback(cc)   # receiver-level STOP — the reliable method
+    print("Stopped.")
+    return True
+
+
 def quick_test():
     """Standalone mode: find the speaker on the home network and play the
     test stream. Returns exit code."""
@@ -400,18 +416,12 @@ def quick_test():
         print("No LG WK7 found on this network. Check this computer is on")
         print("your home Wi-Fi and the speaker is powered on.")
         return 1
-    print(f"Found the speaker at {ip} — playing a test radio station now...")
-    cc = run_playback_test(ip)
-    if not cc:
+    print(f"Found the speaker at {ip}.")
+    ok = play_test_20s(ip)
+    if not ok:
         print("The speaker responded but the test stream didn't start.")
         return 1
-    try:
-        input("Music should be playing from the speaker. "
-              "Press Enter to stop it...")
-    except EOFError:
-        pass
-    stop_playback(cc)
-    print("Stopped. The speaker is working.")
+    print("The speaker is working.")
     return 0
 
 
@@ -580,17 +590,9 @@ def main():
                 print("You can also just test from your phone: open any app")
                 print("with a Cast symbol and the speaker will be listed.")
             else:
-                print(f"Found the speaker at {ip2} — playing a test radio")
-                print("station through it now...")
-                cc = run_playback_test(ip2)
-                if cc:
-                    try:
-                        input("Music should be playing from the speaker. "
-                              "Press Enter to stop it...")
-                    except EOFError:
-                        pass
-                    stop_playback(cc)
-                    print("Stopped. Everything works.")
+                print(f"Found the speaker at {ip2}.")
+                if play_test_20s(ip2):
+                    print("Everything works — the speaker is set up.")
                 else:
                     print("The speaker responded but the test stream didn't")
                     print("start. It may still work fine from your phone apps —")
