@@ -95,16 +95,61 @@ timestamps:
 | E | yes | vol− | service combo? | **NEGATIVE** |
 | F | yes | each in turn: other buttons | catch hidden key codes 0x83/0x85/0x91 | (pending) |
 
-Field-test conclusion (runs B–E): the retail firmware never routes the USB
-controller to the external port under any externally-triggerable boot
-condition. Watcher methodology: `udevadm monitor --kernel --subsystem-match=usb`
+Field-test conclusion (runs B–E): the retail firmware never enumerates the
+USB port in DEVICE mode under any externally-triggerable boot condition.
+Watcher methodology: `udevadm monitor --kernel --subsystem-match=usb`
 (as a normal user — more reliable than watching dmesg scroll), validated by
-plugging a known device mid-run. This matches the two independent failures
-in the WK7-reforged repo's issue #4. Residual uncertainty: the cable itself
-is unverified as a data cable (no second micro-USB device available to test
-with) — but three identical reports elsewhere plus a cable sold as a data
-cable make the MICOM conclusion the strong one. **The UART path below is
-the only remaining route to USB.**
+plugging a known device mid-run; a validated watcher would have caught even
+a one-second enumeration blink. This matches the two independent failures
+in the WK7-reforged repo's issue #4. **Reframed after the Google Home
+findings below: these tests all used a plug-to-plug cable, which leaves the
+USB ID pin floating — host-mode ports may never come up without an
+OTG-style (ID-grounded) plug. Device mode is inert; HOST mode is untested.**
+
+### Cross-platform clue: the Google Home service port (2026-10-25)
+
+Two 2017 r/googlehome threads about the original Google Home (Marvell
+Berlin SoC — different silicon, sibling Cast-era platform) documented:
+
+- The service port works as a USB **HOST** port: the official Chromecast
+  Ultra Ethernet adapter plugged into it gives the device wired networking
+  instantly. A non-powered adapter failed — the port supplies very little
+  power, so bus-powered peripherals need a powered hub.
+- A hidden **bootloader USB mode** exists there: holding MUTE while
+  applying power (cable pre-attached) enumerates the device for a few
+  seconds ("BG2CD") before parking in the bootloader with dim LEDs. The
+  enumeration blink is so short people needed several attempts to read it.
+- (Historical: the original Chromecast was rooted via the USB "HubCap"
+  exploit, fail0verflow 2014 — the ancestor of USB-port attack research on
+  this family.)
+
+Implications for the WK7:
+
+1. **ID-pin theory (primary)**: a micro-B host port decides to host via the
+   ID pin, grounded only by OTG-style plugs. A plain cable to a laptop
+   (ID floating) may never trigger the MICOM's mux at all — consistent
+   with runs B–E showing zero electrical activity. The decisive test is an
+   OTG adapter.
+2. The `eureka_info` API has shown an `ethernet_connected` field (always
+   false so far) in every dump — this platform explicitly contemplates
+   USB-Ethernet, exactly as the Google Home supported.
+3. Observable mux-switch tell: on the Google Home, plugging into the port
+   disabled the capacitive top controls. On the WK7, a mux switch may
+   visibly change button/LED behavior — watch for it during the tests.
+
+### New experiments (host-mode matrix)
+
+| Run | Plug | Peripheral | Watch |
+|---|---|---|---|
+| G | micro-USB **OTG adapter** (ID-grounded) | none (adapter only) | LED/button behavior change; eureka_info |
+| H | OTG adapter | USB flash drive (self-powered not needed) | eureka_info; any LED change |
+| I | OTG adapter + **powered USB hub** | USB-Ethernet dongle (RTL8152/ASIX) | **eureka_info `ethernet_connected`** — the jackpot |
+| J | OTG adapter + powered hub | USB-UART bridge (CP2102) wired for the MICOM pads | n/a — this is doc 03 phase 2 anyway |
+
+Note: the Chromecast Ultra Ethernet adapter (with its own power supply)
+is the single known-good peripheral from the Google Home era — discontinued
+but findable. An OTG adapter + powered hub + generic dongle is the modern
+equivalent.
 
 Expected outcomes: in run A we likely see the boot-time `0xC2` frames with the
 "keep on Wi-Fi" state value; in run B (if the handshake logic is intact) the
