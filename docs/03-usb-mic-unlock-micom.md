@@ -146,10 +146,31 @@ Implications for the WK7:
 | I | OTG adapter + **powered USB hub** | USB-Ethernet dongle (RTL8152/ASIX) | **eureka_info `ethernet_connected`** — the jackpot |
 | J | OTG adapter + powered hub | USB-UART bridge (CP2102) wired for the MICOM pads | n/a — this is doc 03 phase 2 anyway |
 
-Note: the Chromecast Ultra Ethernet adapter (with its own power supply)
-is the single known-good peripheral from the Google Home era — discontinued
-but findable. An OTG adapter + powered hub + generic dongle is the modern
-equivalent.
+**Host-mode results (2026-10-26, all with a verified-good chain):**
+
+Peripheral chain verified independently of the speaker: genuine RTL8152
+dongle (lsusb `0bda:8152` — the chip whose `r8152` driver predates the 3.10
+kernel), powered hub (5V/3A), dongle link tested end-to-end on a Linux
+laptop (driver bound, carrier up) before the speaker runs.
+
+| Run | Condition | Result |
+|---|---|---|
+| G | OTG hot-plug into running speaker | **NEGATIVE** — no LED/button reaction, no eureka change |
+| I | Full chain present at power-on, fresh boot watched | **NEGATIVE** — normal LED boot sequence, `ethernet_connected` false at fresh uptime |
+
+Interpretation: with the one remaining caveat that the OTG adapter's ID
+grounding is unverified (no multimeter at test time), the ID-pin theory is
+dead on this hardware if the adapter is genuine. Unlike the Google Home
+(hardware ID detection on Marvell), the WK7's USB mux is **MICOM-commanded
+(`0xC2`)** — and the retail firmware never sends the command under any
+tested condition. USB externally is closed; **the MICOM UART is the path**.
+A £5 multimeter beep test on the adapter would close the final caveat, and
+a multimeter is required for the UART pad-hunt anyway (Phase 1).
+
+Note: when interpreting "seeing the dongle on the network" — a hub-powered
+dongle links to the router on its own; a new wired client in the router's
+list is NOT evidence of USB adoption by the speaker. Only the speaker's own
+`ethernet_connected` field (or visible behavior change) counts.
 
 Expected outcomes: in run A we likely see the boot-time `0xC2` frames with the
 "keep on Wi-Fi" state value; in run B (if the handshake logic is intact) the
